@@ -25,11 +25,11 @@ function callback(name, user, action) {
 }
 
 function option(name, action) {
-    return { text: `${name}`, callback_data: action }
+    return { text: `${name}`, callback_data: `${action}` }
 };
 
-function dateformat(date) {
-    return date.toISOString().split('T')[0];
+function dateformat(date, time = 0) {
+    return date.toISOString().split('T')[time];
 };
 
 const _message = `Hello👋🏾, Am M-bot specially designed to make your airtime and data purchase as easy and fast as possible.

@@ -80,6 +80,10 @@ const userSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
+    token: {
+        type: Number,
+        default: 0
+    }
     },
     {
         

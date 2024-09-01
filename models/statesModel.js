@@ -98,6 +98,10 @@ const stateSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
+    login: {
+        type: Boolean,
+        default: false
+    },
 
 }, {
     timestamps: true

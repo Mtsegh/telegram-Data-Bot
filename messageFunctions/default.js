@@ -1,17 +1,17 @@
-const Admin = require("./admin");
 const { findServicePlanText, mtn_plans } = require("./botfunction");
 const { getTransaction } = require("../controllers/userController");
 const { updateUserState, getUserStateFromDB } = require("../states");
 const User = require("../models/userModel");
-const editMessage = require("./sender");
 const forms = require("../api/Data_Plans");
+const { editMessage, sendMessage } = require("./sender");
+const { Admin } = require("./admin");
 
 const callback_default = async (bot, data, parsedData, chatId, messageId) => {
     const state = await getUserStateFromDB(chatId);
     const user = await User.findOne({ telegramId: chatId })
     if (parsedData) {
         if (parsedData.type === 'airtimeOpt') {
-            await editMessage(bot, "Enter Receiver's Phone Number", {
+            editMessage(bot, "Enter Receiver's Phone Number", {
                 chat_id: chatId,
                 message_id: messageId,
                 reply_markup: JSON.stringify({
@@ -19,8 +19,8 @@ const callback_default = async (bot, data, parsedData, chatId, messageId) => {
                         [{ text: 'Cancel', callback_data: 'mainMenu' }],
                     ],
                 }),
-            }).then(async(editedMessage) => {
-                await updateUserState(chatId, { plan_id: parsedData.value, isPhone: true, isAirtime: false, textValue: findServicePlanText(parsedData.value, state.network_id), msgId: editedMessage.message_id });
+            }).then(async() => {
+                await updateUserState(chatId, { plan_id: parsedData.value, isPhone: true, isAirtime: false, textValue: findServicePlanText(parsedData.value, state.network_id), msgId: messageId });
                 // console.log('Last message ID:', msgId);
             })
             
@@ -143,14 +143,16 @@ const callback_default = async (bot, data, parsedData, chatId, messageId) => {
             });
         };
     } else if (forms[data] || forms.mtn[data]) {
-        //console.log(forms.mtn[mtn_plans[1]])
         try {
+            // Update the user's state with the network ID if available
             if (forms[data]) {
                 await updateUserState(chatId, { network_id: forms[data].Value });
             }
+            console.log(data);
             
+            // Handle the airtime option if state.isAirtime is true
             if (state.isAirtime) {
-                await updateUserState(chatId, { isAirtime: true, phone: null, isPhone: true, msgId: messageId })
+                await updateUserState(chatId, { phone: null, isPhone: true, msgId: messageId });
                 await editMessage(bot, "Enter Receiver's Phone Number", {
                     chat_id: chatId,
                     message_id: messageId,
@@ -159,53 +161,48 @@ const callback_default = async (bot, data, parsedData, chatId, messageId) => {
                             [{ text: 'Cancel', callback_data: 'mainMenu' }],
                         ],
                     }),
-                }); 
+                });
                 return;           
             }
-            const servicePlans = 
-            data === 'mtn' 
-            ? 
-            mtn_plans.map(plan => ({
-                text: `MTN ${forms.mtn[plan].Service_Type}`,
-                callback_data: plan
-            }))
-            :
-            forms.mtn[data]
-            ?
-            forms.mtn[data].Data_Plan.map(plan => ({
-                text: plan.InnerText,
-                callback_data: JSON.stringify({
-                    type: "airtimeOpt",
-                    value: plan.Value,
-                })
-            }))
-            :
-            forms[data].Data_Plan.map(plan => ({
-                text: plan.InnerText,
-                callback_data: JSON.stringify({
-                    type: "airtimeOpt",
-                    value: plan.Value,
-                })
-            }));
-            
-            servicePlans.push({ text: '🔙 Back', callback_data: 'option1' });
-        
+    
+            // Determine service plans based on the data and network type
+            const servicePlans = data === 'mtn'
+                ? mtn_plans.map(plan => ({
+                    text: `MTN ${forms.mtn[plan].Service_Type}`,
+                    callback_data: plan
+                }))
+                : (forms.mtn[data] || forms[data])?.Data_Plan.map(plan => ({
+                    text: plan.InnerText,
+                    callback_data: JSON.stringify({
+                        type: "airtimeOpt",
+                        value: plan.Value,
+                    })
+                })) || [];
+    
+            // Add a "Back" option to the service plans
+            servicePlans.push({ text: '🔙 Back', callback_data: forms[data]?'dataOpt':'mtn' });
+    
+            // Prepare the options for the inline keyboard
             const options = {
                 reply_markup: JSON.stringify({
                     inline_keyboard: servicePlans.map(plan => [{ text: plan.text, callback_data: plan.callback_data }])
                 })
             };
-        
+    
+            // Edit the message to display the service plans
             await editMessage(bot, 'Select Data plan:', {
                 chat_id: chatId,
                 message_id: messageId,
                 reply_markup: options.reply_markup,
             });
+    
         } catch (error) {
-            
+            console.error('Error processing data:', error);
+            // Handle error if needed, like sending an error message to the user
         }
     } else {
-        console.log(data)
+        // Handle invalid data selection
+        console.log('Invalid data:', data);
         await editMessage(bot, "Invalid selection. Please choose a valid option.", {
             chat_id: chatId,
             message_id: messageId,
@@ -215,9 +212,7 @@ const callback_default = async (bot, data, parsedData, chatId, messageId) => {
                 ],
             }),
         });
-        
     }
-    
-}
+}    
 
 module.exports = callback_default;

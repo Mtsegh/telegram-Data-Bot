@@ -4,7 +4,7 @@ const { sendDataFormsMenu, sendMainMenu } = require("./message");
 const User = require("../models/userModel");
 const { resetUserState, updateUserState, getUserStateFromDB } = require("../states");
 const { editMessage, sendPhoto } = require("./sender");
-const { dateformat, stringify, option } = require("./botfunction");
+const { dateformat, stringify, option, menu } = require("./botfunction");
 
 const handle_callback_data = async (bot, data, messageId, chatId) => {
     // const chatId = chatId?chatId;
@@ -50,14 +50,14 @@ const handle_callback_data = async (bot, data, messageId, chatId) => {
                     message_id: messageId,
                     reply_markup: JSON.stringify({
                         inline_keyboard: [
-                            [{ text: 'Transaction History', callback_data: 'history' }],
-                            [{ text: 'Login existing account', callback_data: 'login' }],
-                            [{ text: 'Change Passcode', callback_data: 'changepass' }],
-                            [{ text: 'Contact Us', callback_data: JSON.stringify({
+                            [option('Transaction History', 'history')],
+                            [option('Login existing account', 'login')],
+                            [option('Change Passcode', 'changepass')],
+                            [option('Contact Us', JSON.stringify({
                                 type: "contact",
                                 value: 'accountIssue',
-                            }) }],
-                            [{ text: '🔙 Back', callback_data: 'mainMenu' }],
+                            }))],
+                            user.admin?[menu(chatId)]:[option('🔙 Back', 'mainMenu')]
                         ],
                     }),
                 });
@@ -72,7 +72,7 @@ const handle_callback_data = async (bot, data, messageId, chatId) => {
                 break;
 
             case 'airtimeOpt':
-                await updateUserState(chatId, {airtime})
+                await updateUserState(chatId, { isAirtime: true })
                 await sendDataFormsMenu(bot, chatId, messageId);
                 break;
 
@@ -107,7 +107,7 @@ const handle_callback_data = async (bot, data, messageId, chatId) => {
                 break;
 
             case 'login':
-                await updateUserState(chatId, { isAUT: true, msgId: messageId });
+                await updateUserState(chatId, { isAUT: true, msgId: messageId, login: true });
                 await editMessage(bot, "Enter your Account Unique Token to login", {
                     chat_id: chatId,
                     message_id: messageId,
@@ -142,6 +142,7 @@ const handle_callback_data = async (bot, data, messageId, chatId) => {
                     })
                     
                 });
+                break
             case 'contactUs':
                 await editMessage(bot, "Report Account issue", {
                     chat_id: chatId,
@@ -241,6 +242,7 @@ const handle_callback_data = async (bot, data, messageId, chatId) => {
                 break;
             default:
                 callback_default(bot, data, parsedData, chatId, messageId)
+                break
         }
     } catch (error) {
         console.error('Error handling callback:', error);

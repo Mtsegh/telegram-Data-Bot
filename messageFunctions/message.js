@@ -1,4 +1,4 @@
-const { key, extractNairaAmount, extractDataAmount, callback, menu, option } = require("./botfunction");
+const { key, extractNairaAmount, extractDataAmount, callback, menu, option, stringify } = require("./botfunction");
 const { registerUser, changepasscode, accountswitch } = require("../controllers/userController");
 const User = require("../models/userModel");
 const { getUserStateFromDB, updateUserState, resetUserState } = require("../states");
@@ -7,19 +7,18 @@ const { deleteMessage, sendMessage, editMessage } = require("./sender");
 const errorHandler = require("../middleware/errorMiddleware");
 const { saveMessageData } = require("../middleware/authMiddleware");
 const { Contactadmin } = require("./admin");
-const State = require("../models/statesModel");
 
 const handle_message = async (bot, msge) => {
-    try {
-        const chatId = msge.chat.id;
-        const message = msge.text;
-        const Name = msge.chat.first_name
-        console.log(Name);
-        
-        const state = await getUserStateFromDB(chatId);
-        const user = await User.findOne({telegramId:chatId});
-        await saveMessageData(msge)   
+    const chatId = msge.chat.id;
+    const message = msge.text;
+    const Name = msge.chat.first_name
+    console.log(Name);
+    const state = await getUserStateFromDB(chatId);
+    const user = await User.findOne({telegramId:chatId});
+    await saveMessageData(msge)   
+    const aut_regex = /^\$\d{13}@[MTSEGHNADOO]{10}$/
     
+    try {
         if (/\/start/.test(message)) {
             if (!state) {
                 return "An error occured;"
@@ -30,13 +29,23 @@ const handle_message = async (bot, msge) => {
                     await updateUserState(chatId, { p1c: true, retry: false, notuser: true });
                 });
             } else {
-                await sendMainMenu(bot, chatId, state.msgId);
+                if (!user.admin) await sendMainMenu(bot, chatId, state.msgId);
+                if (user.admin) {
+                    const options = stringify([
+                        [menu(chatId)],
+                        ])
+                        
+                    await sendMessage(bot, chatId, "Admin, select option below", options);
+                    
+                }
                 await updateUserState(chatId, { retry: false })
             }
         
-        } else if (state.isAUT && RegExp.match()) {// TODO Match regex of aut
+        } else if (state.isAUT && aut_regex.test(message)) {
+            
             try {
                 const isuser = await User.findOne({ AUT: message });
+                
                 if (isuser) {
                     await deleteMessage(bot, chatId, msge.message_id)
                     if (state.cpass) {
@@ -53,7 +62,8 @@ const handle_message = async (bot, msge) => {
                         });
                     } else if (state.login) {
                         await deleteMessage(bot, chatId, state.msgId);
-                        await sendMessage(bot, chatId, 'Logging in...').then((msg) => {
+                        sendMessage(bot, chatId, 'Logging in...').then(async(msg) => {
+                            
                             accountswitch(chatId, message).then(async(login) => {
                                 
                                 if (login.message||login.error) {
@@ -281,7 +291,9 @@ const handle_message = async (bot, msge) => {
             });
         }
     } catch (error) {
-        await errorHandler(bot, chatId, state.msgId, `Network failed. Try again.\nIf issue persists contact admin`, stringify([[option('Contact', json({ type: 'contact', value: 'accountIssue' }))], [option('🔙 Back', 'mainMenu')]]));
+        console.error(error);
+        
+        await errorHandler(bot, chatId, state.msgId, `Network failed. Try again.\nIf issue persists contact admin`, stringify([[option('Contact', JSON.stringify({ type: 'contact', value: 'accountIssue' }))], [option('🔙 Back', 'mainMenu')]]));
     }
 }
 
@@ -304,7 +316,7 @@ async function sendStartMessage(bot, chatId, register) {
                 await updateUserState(chatId, { p1c: false, retry: false });
             });
     } catch (error) {
-        await errorHandler(bot, chatId, state.msgId, `Network failed. Try again.\nIf issue persists contact admin`, stringify([[option('Contact', json({ type: 'contact', value: 'accountIssue' }))], [option('🔙 Back', 'mainMenu')]]));
+        await errorHandler(bot, chatId, state.msgId, `Network failed. Try again.\nIf issue persists contact admin`, stringify([[option('Contact', JSON.stringify({ type: 'contact', value: 'accountIssue' }))], [option('🔙 Back', 'mainMenu')]]));
     }
 }
 

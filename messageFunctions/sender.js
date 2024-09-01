@@ -31,13 +31,12 @@ async function editMessage(bot, text, details) {
  * @param {Object} option - The inline keyboard options of the message.
  * @returns {Promise} - A promise that resolves when the message is set or rejects if there's an error.
  */
-async function sendMessage(bot, chatId, text, option) {
+async function sendMessage(bot, chatId, text, option = {}) {
     try {
-        await bot.sendMessage(chatId, text, option).then(async(msg) => {
-            await updateUserState(chatId, { msgId: msg.message_id })
-            console.log('Message sent successfully');
-            return msg.message_id
-        });
+        const msg = await bot.sendMessage(chatId, text, option);
+        await updateUserState(chatId, { msgId: msg.message_id });
+        console.log('Message sent successfully');
+        return msg.message_id; // Return the message ID
     } catch (error) {
         console.error('Error sending message:', {
             text,
@@ -46,6 +45,7 @@ async function sendMessage(bot, chatId, text, option) {
         });
     }
 }
+
 
 
 /**

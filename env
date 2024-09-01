@@ -1,0 +1,13 @@
+MONGO_URI="mongodb+srv://mtseghnadooihom:mtseghnadooihom@merchant.mz3erpr.mongodb.net/data-app?retryWrites=true&w=majority&appName=Merchant"
+
+NODE_ENV="development"
+TID=6435944593
+JWT_SECRET="$7@__init__(21):merchantvendorbot#T"
+TOKEN='7485778029:AAHb3yymLQt1HSBllQcrCVrgUTqRuKU4iN8';
+TCD_API='f5ebdb19ab594ca3a8c97fa7d2c69e0681ff9a95'
+EMAIL_HOST=smtp-mail.outlook.com
+EMAIL_USER=mtseghdev000@outlook.com
+EMAIL_PASS='__init__(21)'
+FRONTEND_URL=http://localhost:5000
+AGBABILLS_EMAIL=mtseghnadoo@gmail.com
+AGBABILLS_PASSWORD='__Init__(21)'

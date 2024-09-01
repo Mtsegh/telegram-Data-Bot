@@ -53,7 +53,8 @@ async function getUserStateFromDB(chatId) {
                 ref: false,
                 bugAccountId: null,
                 text: false,
-                signin: false
+                signin: false,
+                login: false
             });
     
             if (!updatedState) {
@@ -99,6 +100,8 @@ async function resetUserState(chatId) {
                     bugAccountId: null,
                     text: false,
                     signin: false,
+                    login: false,
+
                 }
             },
             { 

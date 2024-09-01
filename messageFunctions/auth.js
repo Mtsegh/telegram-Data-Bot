@@ -18,9 +18,9 @@ const secured = async(bot, authaction, chatId, msgId) => {
                     const info = { amount: state.amount, network_id: state.network_id, plan_id: state.plan_id, purchase: 'Data Purchase', validity: getValidity(state.textValue) }
                     makePurchase(chatId, service[0], info).then(async(buy) => {
                         if (buy.message||buy.error) {
-                            await errorHandler(bot, chatId, state.msgId, `${buy.message||buy.error}\nIf issue persists contact admin`, stringify([[option('Contact', json({ type: 'contact', value: 'buy' }))], [option('🔙 Back', 'dataOpt')]]));
+                            await errorHandler(bot, chatId, state.msgId, `${buy.message||buy.error}\nIf issue persists contact admin`, stringify([[option('Contact', JSON.stringify({ type: 'contact', value: 'buy' }))], [option('🔙 Back', 'dataOpt')]]));
                         } else {                        
-                            const options = { reply_markup: { inline_keyboard: [ [{ text: 'Download Receipt', callback_data: 'del' }], [option('Contact', json({ type: 'contact', value: 'buy' }))], [{ text: '🔙 Back', callback_data: 'history' }] ] } };
+                            const options = { reply_markup: { inline_keyboard: [ [{ text: 'Download Receipt', callback_data: 'del' }], [option('Contact', JSON.stringify({ type: 'contact', value: 'buy' }))], [{ text: '🔙 Back', callback_data: 'history' }] ] } };
                             await editMessage(bot, `${buy.success}\nTransaction Info\nTransaction Date: ${buy.newHistory.date}\nReference Id: ${buy.newHistory.referenceId}\n${buy.newHistory.type}: ${buy.newHistory.description}\nNetwork: ${buy.newHistory.provider}\nAmount: ${buy.newHistory.amount}\nStatus: ${buy.newHistory.status}Date: `, {
                                 chat_id: chatId,
                                 message_id: state.msgId,
@@ -30,7 +30,7 @@ const secured = async(bot, authaction, chatId, msgId) => {
                     })
                 });
             } catch (error) {
-                await errorHandler(bot, chatId, state.msgId, `Transaction failed. Try again.\nIf issue persists contact admin`, stringify([[option('Contact', json({ type: 'contact', value: 'buy' }))], [option('🔙 Back', 'dataOpt')]]));
+                await errorHandler(bot, chatId, state.msgId, `Transaction failed. Try again.\nIf issue persists contact admin`, stringify([[option('Contact', JSON.stringify({ type: 'contact', value: 'buy' }))], [option('🔙 Back', 'dataOpt')]]));
             }
         } else if (authaction==="airtime") {
             try {
@@ -38,9 +38,9 @@ const secured = async(bot, authaction, chatId, msgId) => {
                     const info = { amount: state.amount, network_id: state.network_id, purchase: 'Airtime Purchase', validity: 'Validated' }
                     makePurchase(chatId, service[1], info).then(async(buy) => {
                         if (buy.message||buy.error) {
-                            await errorHandler(bot, chatId, state.msgId, `${buy.message||buy.error}\nIf issue persists contact admin`, stringify([[option('Contact', json({ type: 'contact', value: 'buy' }))], [option('🔙 Back', 'airtimeOpt')]]));
+                            await errorHandler(bot, chatId, state.msgId, `${buy.message||buy.error}\nIf issue persists contact admin`, stringify([[option('Contact', JSON.stringify({ type: 'contact', value: 'buy' }))], [option('🔙 Back', 'airtimeOpt')]]));
                         } else {                        
-                            const options = { reply_markup: { inline_keyboard: [ [{ text: 'Download Receipt', callback_data: 'del' }], [option('Contact', json({ type: 'contact', value: 'buy' }))], [{ text: '🔙 Back', callback_data: 'mainMenu' }] ] } };
+                            const options = { reply_markup: { inline_keyboard: [ [{ text: 'Download Receipt', callback_data: 'del' }], [option('Contact', JSON.stringify({ type: 'contact', value: 'buy' }))], [{ text: '🔙 Back', callback_data: 'mainMenu' }] ] } };
                             await editMessage(bot, `${buy.success}\nTransaction Info\nTransaction Date: ${buy.newHistory.date}\nReference Id: ${buy.newHistory.referenceId}\n${buy.newHistory.type}: ${buy.newHistory.description}\nNetwork: ${buy.newHistory.provider}\nAmount: ${buy.newHistory.amount}\nStatus: ${buy.newHistory.status}Date: `, {
                                 chat_id: chatId,
                                 message_id: state.msgId,
@@ -50,13 +50,13 @@ const secured = async(bot, authaction, chatId, msgId) => {
                     })
                 });
             } catch (error) {
-                await errorHandler(bot, chatId, state.msgId, `Transaction failed. Try again.\nIf issue persists contact admin`, stringify([[option('Contact', json({ type: 'contact', value: 'buy' }))], [option('🔙 Back', 'airtimeOpt')]]));
+                await errorHandler(bot, chatId, state.msgId, `Transaction failed. Try again.\nIf issue persists contact admin`, stringify([[option('Contact', JSON.stringify({ type: 'contact', value: 'buy' }))], [option('🔙 Back', 'airtimeOpt')]]));
             }
         } else {
-            await errorHandler(bot, chatId, state.msgId, `Transaction failed. Try again.\nIf issue persists contact admin`, stringify([[option('Contact', json({ type: 'contact', value: 'buy' }))], [option('🔙 Back', 'option1')]]));
+            await errorHandler(bot, chatId, state.msgId, `Transaction failed. Try again.\nIf issue persists contact admin`, stringify([[option('Contact', JSON.stringify({ type: 'contact', value: 'buy' }))], [option('🔙 Back', 'option1')]]));
         }
     } catch (error) {
-        await errorHandler(bot, chatId, state.msgId, `Transaction failed. Try again.\nIf issue persists contact admin`, stringify([[option('Contact', json({ type: 'contact', value: 'buy' }))], [option('🔙 Back', 'airtimeOpt')]]));
+        await errorHandler(bot, chatId, state.msgId, `Transaction failed. Try again.\nIf issue persists contact admin`, stringify([[option('Contact', JSON.stringify({ type: 'contact', value: 'buy' }))], [option('🔙 Back', 'airtimeOpt')]]));
     }
 }
 

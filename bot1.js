@@ -43,7 +43,7 @@ mongoose.connect(process.env.MONGO_URI).then(() => {
         });
     
         bot.on('polling_error', (error) => {
-            console.error('Polling error:', error.code, '\n', error.message, '\n', error.stack);
+            console.error('Polling error:', error.code, '\n', error.message, '\n', /*error.stack*/);
         });
     } catch (error) {
         console.log('Error:\n', error.message)
