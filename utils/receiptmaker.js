@@ -3,11 +3,10 @@ const path = require('path');
 async function getReceipt(TId, info) {
     // Define your HTML content with styles
     const htmlContent = `
-      <html>
+    <html>
     <head>
           <style>
             body {
-                
                 font-family: Arial, sans-serif;
                 background-color: #f5f5f5;
                 margin: 0;
@@ -24,7 +23,6 @@ async function getReceipt(TId, info) {
               padding: 20px;
               border-radius: 1px;
               box-shadow: 0 0 10px rgba(0, 0, 0);
-              
             }
             h3 {
                 text-align: center;
@@ -57,10 +55,9 @@ async function getReceipt(TId, info) {
     </head>
     <body>
         <div class="sect">
-            
-        {refid:, type:, quantity:, network:, amount:, status:, date:,}
+
          <div class="container">
-              <h2 id="vb">Vendor Bot</h2>
+            <h2 id="vb">Vendor Bot</h2>
             <h3>Transaction Receipt</h3>
             <div class="detail"><p id="label">
                 Reference Id:</p> <p>~</p><p class="value" style="color: green">${info.refid}</p></div>
@@ -78,31 +75,36 @@ async function getReceipt(TId, info) {
 </html>
     `;
 
-    // Launch a headless browser
-    const browser = await puppeteer.launch({headless:false});
-    const page = await browser.newPage();
-
-    // Set the content of the page
-    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-
-    // Select the element you want to capture
-    const element = await page.$('.sect');
-
-    if (element) {
-        // Capture screenshot of the specific element and save directly to the current directory
-        await element.screenshot({
-            path: path.join(__dirname, `../UserReceipt/${TId}.jpg`), // Save as PNG in current directory
-            type: 'jpeg', // Specify PNG format
-            quality: 100 // Set quality (0-100), applicable to formats like JPEG
-        });
-
-        console.log('Screenshot of the div successfully created at div-screenshot.png');
-    } else {
-        console.error('Element not found');
+    try {
+      // Launch a headless browser
+      const browser = await puppeteer.launch();
+      const page = await browser.newPage();
+  
+      // Set the content of the page
+      await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+  
+      // Select the element you want to capture
+      const element = await page.$('.sect');
+  
+      if (element) {
+          // Capture screenshot of the specific element and save directly to the current directory
+          await element.screenshot({
+              path: path.join(__dirname, `../UserReceipt/${TId}.jpg`), // Save as PNG in current directory
+              type: 'jpeg', // Specify PNG format
+              quality: 100 // Set quality (0-100), applicable to formats like JPEG
+          });
+  
+          console.log('Screenshot of the div successfully created at div-screenshot.png');
+      } else {
+          console.error('Element not found');
+      }
+  
+      // Close the browser
+      await browser.close();
+    } catch (error) {
+      console.error('Error: ', error);
+      
     }
-
-    // Close the browser
-    await browser.close();
 }
 
 module.exports = getReceipt

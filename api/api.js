@@ -14,7 +14,7 @@ const buyairtime = async (network_id, amount, phone) => {
         method: 'post',
         url: 'https://thechosendata.com/api/topup/',
         headers: { 
-            'Authorization': `Token f5ebdb19ab594ca3a8c97fa7d2c69e0681ff9a95`, 
+            'Authorization': `Token 84b5cbc556dfd676c7e179367220d5db7663b229`, 
             'Content-Type': 'application/json'
         },
         data: data
@@ -23,9 +23,10 @@ const buyairtime = async (network_id, amount, phone) => {
     try {
         const response = await axios(config);
         console.log(JSON.stringify(response.data, null, 2));
+        return response.data;
     } catch (error) {
-        
         console.error('Error:', error.response ? error.response.data : error.message);
+        return { Error: error.response ? error.response.data : error.message }
     }
 }
 
@@ -42,7 +43,7 @@ const buydata = async (network_id, plan_id, phone) => {
         method: 'post',
         url: 'https://thechosendata.com/api/data/',
         headers: { 
-            'Authorization': `Token f5ebdb19ab594ca3a8c97fa7d2c69e0681ff9a95`, 
+            'Authorization': `Token 84b5cbc556dfd676c7e179367220d5db7663b229`, 
             'Content-Type': 'application/json'
         },
         data: data
@@ -51,8 +52,12 @@ const buydata = async (network_id, plan_id, phone) => {
     try {
         const response = await axios(config);
         console.log(JSON.stringify(response.data, null, 2));
+        return response.data;
     } catch (error) {
-        console.error('Error:', error.response ? error.response.data : error.message);
+        console.log(error, 'network_id, plan_id, phone', network_id, plan_id, phone);
+        
+        console.error('Error1234:', error.response ? error.response.data : error.message);
+        return { Error: error.response ? error.response.data : error.message }
     }
 }
 
@@ -62,7 +67,7 @@ const verify = async (transactionId) => {
         method: 'get',
         url: `https://thechosendata.com/api/data/${transactionId}`,
         headers: { 
-            'Authorization': `Token f5ebdb19ab594ca3a8c97fa7d2c69e0681ff9a95`, 
+            'Authorization': `Token 84b5cbc556dfd676c7e179367220d5db7663b229`, 
             'Content-Type': 'application/json'
         }
     };
@@ -70,27 +75,33 @@ const verify = async (transactionId) => {
     try {
         const response = await axios(config);
         console.log(JSON.stringify(response.data, null, 2));
+        return response.data;
     } catch (error) {
         console.error('Error:', error.response ? error.response.data : error.message);
+        return { Error: error.response ? error.response.data : error.message }
     }
 }
 
 // Function to get user info
 const api_user = async () => {
+    console.log(process.env.TCD_API);
+    
     const config = {
         method: 'get',
         url: 'https://thechosendata.com/api/user/',
         headers: { 
-            'Authorization': `Token ${process.env.TCD_API}`, 
+            'Authorization': `Token 84b5cbc556dfd676c7e179367220d5db7663b229 `, 
             'Content-Type': 'application/json'
         }
     };
 
     try {
         const response = await axios(config);
-        console.log(JSON.stringify(response.data, null, 2));
+        console.log(JSON.stringify(response.data, null, '\n'));
+        return JSON.stringify(response.data, null, '\n');
     } catch (error) {
         console.error('Error:', error.response ? error.response.data : error.message);
+        return { Error: error.response ? error.response.data : error.message }
     }
 }
 
@@ -99,14 +110,19 @@ const api_airtory = async () => {
     const config = {
         method: 'get',
         url: 'https://thechosendata.com/api/data/',
-        headers: {}
+        headers: { 
+            'Authorization': `Token 84b5cbc556dfd676c7e179367220d5db7663b229 `, 
+            'Content-Type': 'application/json'
+        }
     };
 
     try {
         const response = await axios(config);
         console.log(JSON.stringify(response.data, null, 2));
+        return response.data;
     } catch (error) {
         console.error('Error:', error.response ? error.response.data : error.message);
+        return { Error: error.response ? error.response.data : error.message }
     }
 }
 
@@ -115,14 +131,19 @@ const api_datory = async () => {
     const config = {
         method: 'get',
         url: 'https://thechosendata.com/api/data/58',
-        headers: {}
+        headers: { 
+            'Authorization': `Token 84b5cbc556dfd676c7e179367220d5db7663b229 `, 
+            'Content-Type': 'application/json'
+        }
     };
 
     try {
         const response = await axios(config);
         console.log(JSON.stringify(response.data, null, 2));
+        return response.data;
     } catch (error) {
         console.error('Error:', error.response ? error.response.data : error.message);
+        return { error: error.response ? error.response.data : error.message }
     }
 }
 

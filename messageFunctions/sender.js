@@ -1,6 +1,6 @@
-const { updateUserState } = require("../states");
+const { updateUserState } = require("../controllers/stateController");
 const getReceipt = require("../utils/receiptmaker");
-const { option } = require("./botfunction");
+const { option, stringify } = require("./botfunction");
 
 /**
  * Edits a message with the given text and details, and handles errors.
@@ -14,12 +14,21 @@ async function editMessage(bot, text, details) {
         await bot.editMessageText(text, details);
         console.log('Message edited successfully');
     } catch (error) {
-        await sendMessage(bot, details.chat_id, text, details.reply_markup);
-        console.error('Error editing message:', {
-            text,
-            details,
-            error: error.message || error
-        });
+        deleteMessage(bot, details.chat_id, details.message_id);
+        // Check for the specific error
+        if (error.message.includes('ETELEGRAM: 400 Bad Request: message is not modified')) {
+            console.warn('Message not modified: The new content and reply markup are the same as the current content.');
+            const msgId = await sendMessage(bot, details.chat_id, text, details.reply_markup);
+            return msgId
+        } else {
+            const msgId = await sendMessage(bot, details.chat_id, text, details.reply_markup);
+            console.error('Error editing message:', {
+                text,
+                details,
+                error: error.message || error
+            });
+            return msgId
+        }   
     }
 }
 
@@ -65,14 +74,33 @@ async function deleteMessage(bot, chatId, messageId) {
             messageId,
             error: error.message || error
         });
+        return;
     }
 }
 
+const fs = require('fs');
+const path = require('path');
+
 async function sendPhoto(bot, detail, chatId) {
     try {
-        await getReceipt(chatId, detail)
-        const photo = `../userReceipt/${chatId}.jpg`;
-        await bot.sendPhoto(chatId, photo, stringify([[option('🔙 Back', 'history')], [option('Main Menu', 'mainMenu')] ]));
+        await getReceipt(chatId, detail);
+        
+        const photoPath = path.resolve(__dirname, `../userReceipt/${chatId}.jpg`);
+        
+        // Check if the file exists
+        if (!fs.existsSync(photoPath)) {
+            throw new Error(`Receipt image not found at ${photoPath}`);
+        }
+
+        await bot.sendPhoto(chatId, photoPath, {
+            reply_markup: JSON.stringify({
+                inline_keyboard: [
+                    [option('🔙 Back', 'history')],
+                    [option('Main Menu', 'mainMenu')]
+                ]
+            })
+        });
+        
         console.log('Receipt sent successfully');
     } catch (error) {
         console.error('Error sending receipt:', {

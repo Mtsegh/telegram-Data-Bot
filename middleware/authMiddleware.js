@@ -1,17 +1,22 @@
 const User = require("../models/userModel");
-const { updateUserState, getUserStateFromDB } = require("../states");
-const { sendMessage, editMessage } = require("../messageFunctions/sender");
+const { updateUserState, getUserStateFromDB } = require("../controllers/stateController");
+const { sendMessage, editMessage, deleteMessage } = require("../messageFunctions/sender");
 const Message = require("../models/messageModel");
-const { sendMainMenu } = require("../messageFunctions/message");
+const { stringify, menu, option } = require("../messageFunctions/botfunction");
 
 const protect = async (bot, msg, TId) => {
     try {
         const user = await User.findOne({ telegramId: TId })
         const state = await getUserStateFromDB(TId);
-            
+           
         if (!user) {
+            await updateUserState(TId, { reqUser: {} });
             return { status: true, message: "User not found" };
+        } else {
+            updateUserState(TId, { reqUser: user });
         }
+
+        
         const token = user.token
         console.log('Your token', token)
         
@@ -30,8 +35,10 @@ const protect = async (bot, msg, TId) => {
                 })
                 user.token = user.admin ? Date.now() + 10*60*1000 : Date.now() + 86400000*2;
                 await user.save();
+                deleteMessage(bot, TId, state.msgId)
                 await updateUserState(TId, { signin: false });
-                await sendMainMenu(bot, TId, state.msgId)
+                if (!user.admin) await sendMessage(bot, TId, 'Choose an option:', stringify([[option('Make Purchase', 'option1')],[option('Manage Account', 'option2')]]));
+                if (user.admin) await sendMessage(bot, TId, "Admin, select option below", stringify([[menu(TId)]]));
                 return { status: false };
             }
             await editMessage(bot, 'Passcode not correct. Please try again.\nEnter passcode to continue:', {
@@ -57,7 +64,7 @@ const protect = async (bot, msg, TId) => {
     } catch (error) {
         console.error(error);
         
-        return { status: false, message: 'An unexpected error occurred.\nContact Admin.'}
+        return { status: false, message: 'An unexpected error occurred.\nContact Admin.'};
     }
     
 };
@@ -74,7 +81,6 @@ const saveMessageData = async (msg) => {
         });
 
         await newMessage.save();
-        console.log(`Message ${message_id} from chat ${chatId} saved.`);
     } catch (error) {
         console.error('Error saving message data:', error);
     }

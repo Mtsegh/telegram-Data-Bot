@@ -9,13 +9,13 @@ const registerUser = asyncHandler(async (name, passcode, TId) => {
     try {
         const exists = await User.findOne({ telegramId: TId });
         if (exists) {
-            return { message: "User exists" };
+            return { message: "User exists." };
         }
         if (!passcode) {
             return { message: 'Passcode expected' };
         }
         if (passcode.length < 4 || passcode.length > 8) {
-            return { message: "Passcode must have at least 4 characters and must not exceed 7 characters" };
+            return { message: "Passcode must have at least 4 characters and must not exceed 8 characters" };
         }
         
         const aut = generateAut();
@@ -34,12 +34,12 @@ const registerUser = asyncHandler(async (name, passcode, TId) => {
             return { message: "Registration failed" };
         }
     } catch (error) {
-        return { error: error.message };
+        return { error: `${error.message}` };
     }
 });
 
 // Logout User
-const logout = asyncHandler(async (req, res) => {
+const logout = asyncHandler(async (aut, res) => {
     try {
         const user = await User.findOne({ AUT: aut });
         
@@ -50,17 +50,20 @@ const logout = asyncHandler(async (req, res) => {
         await user.save();
         return { success: "Successfully Logged Out" };
     } catch (error) {
-        return { error: error.message };
+        return { error: `${error.message}\nTry again or contact admin` };
     }
 });
 
 // Change Passcode
 const changepasscode = asyncHandler(async (aut, passcode) => {
     try {
+        if (passcode.length < 4 || passcode.length > 8) {
+            return { message: "Passcode must have at least 4 characters and must not exceed 8 characters" };
+        }
         const user = await User.findOne({ AUT: aut });
         
         if (!user) {
-            return { message: "User not found" };
+            return { message: "User not found. Contact admin." };
         }
         
         user.passcode = passcode;
@@ -77,13 +80,13 @@ const accountswitch = asyncHandler(async (TId, aut) => {
         const user = await User.findOne({ AUT: aut });
         
         if (!user) {
-            return { message: "User Token Not Found" };
+            return { message: "User Token Not Found.\nTry again or contact admin" };
         }
         user.telegramId = TId;
         await user.save();
         return { success: "Login Successful" };
     } catch (error) {
-        return { error: error.message };
+        return { error: `${error.message}\nTry again or contact admin` };
     }
 });
 
@@ -93,13 +96,13 @@ const getUserHistory = asyncHandler(async (TId) => {
         const user = await User.findOne({ telegramId: TId });
         
         if (!user) {
-            return { message: "User not found" };
+            return { message: "User not found. Contact admin." };
         }
         
         const history = user.transactionHistory;
         return history;
     } catch (error) {
-        return { error: error.message };
+        return { error: `${error.message}\nTry again or contact admin` };
     }
 });
 
@@ -109,7 +112,7 @@ const getTransaction = asyncHandler(async (TId, referenceId) => {
         const user = await User.findOne({ telegramId: TId });
         
         if (!user) {
-            return { message: "User not found" };
+            return { message: "User not found. Please try again or contact admin" };
         }
 
         if (!referenceId) {
@@ -120,12 +123,12 @@ const getTransaction = asyncHandler(async (TId, referenceId) => {
         const transactionInfo = history.find(tx => tx.referenceId === referenceId);
         
         if (!transactionInfo) {
-            return { message: "Transaction not found" };
+            return { message: "No transaction found" };
         }
         
-        return { transactionInfo };
+        return transactionInfo;
     } catch (error) {
-        return { error: error.message };
+        return { error: `${error.message}\nTry again or contact admin` };
     }
 });
 
@@ -138,8 +141,9 @@ const makePurchase = asyncHandler(async (TId, typeofservice, info) => {
         
         const user = await User.findOne({ telegramId: TId });
 
-        if (!user) {
-            return { message: "User not found" };
+        if (!user || !user?.accountstatus) {
+            const msg = 'User not found.'
+            return { message: `${!user?msg:'Your account has been suspended.'} Contact admin.` };
         }
 
         const balance = user.balance;
@@ -152,6 +156,8 @@ const makePurchase = asyncHandler(async (TId, typeofservice, info) => {
             if (typeofservice === "data") {
                 const { network_id, plan_id, phone } = info;
                 tranx_res = await buydata(network_id, plan_id, phone);
+                console.log(phone);
+                
             } else if (typeofservice === "airtime") {
                 const { network_id, amount, phone } = info;
                 tranx_res = await buyairtime(network_id, amount, phone);
@@ -162,11 +168,13 @@ const makePurchase = asyncHandler(async (TId, typeofservice, info) => {
             return { error: "Transaction failed, please try again" };
         }
         
-        if (!tranx_res) {
+        if (!tranx_res || tranx_res.Error) {
             return { message: "Unable to process transaction, please try again later" };
         }
+        console.log(tranx_res, tranx_res.Error);
         
         user.balance = tranx_res.Status === "successful" ? balance - Number(info.amount) : balance;
+        const status = tranx_res.Status === "successful" ? 'completed' : tranx_res.Status;
 
         const refId = generateRandomString(2, 'NOPACBDEFH');
                 
@@ -174,19 +182,18 @@ const makePurchase = asyncHandler(async (TId, typeofservice, info) => {
             referenceId: `${tranx_res.id+refId}`,
             amount: Number(info.amount),
             type: info.purchase,
-            API_Id: tranx_res.id,
             description: `${info.validity}`,
             provider: key[Number(info.network_id)],
-            status: tranx_res.Status,
+            status: status,
             createdAt: new Date()
         };
 
         user.transactionHistory.push(newHistory);
         await user.save();
-
-        return { newHistory, success: message };
+        
+        return { newHistory, success: 'Transaction successfull.\nDetails' };
     } catch (error) {
-        return { error: error.message };
+        return { error: `${error.message}\nTry again or contact admin` };
     }
 });
 
@@ -200,7 +207,7 @@ const makeDeposit = asyncHandler(async (TId, typeofdeposit, info) => {
         const user = await User.findOne({ telegramId: TId });
 
         if (!user) {
-            return { message: "User not found" };
+            return { message: "User not found. Contact admin." };
         }
 
         const balance = user.balance;
@@ -208,7 +215,7 @@ const makeDeposit = asyncHandler(async (TId, typeofdeposit, info) => {
         try {
             depositamount = parseInt(info.amount);
         } catch (error) {
-            return { error: error.message };
+            return { error: `${error.message}\nTry again or contact admin` };
         }
         
         const newbalance = balance + depositamount;
@@ -237,9 +244,9 @@ const makeDeposit = asyncHandler(async (TId, typeofdeposit, info) => {
         user.transactionHistory.push(newHistory);
         await user.save();
 
-        return { success: 'Deposit Successful', newHistory };
+        return { success: 'Deposit Successful', newHistory: newHistory, text: user.accountstatus?'Suspend user' : 'Activate user' };
     } catch (error) {
-        return { error: error.message };
+        return { error: `${error.message}\nTry again or contact admin` };
     }
 });
 
@@ -269,7 +276,7 @@ const verifyTransaction = asyncHandler(async (TId, referenceId) => {
         
         return { confirmedStatus };
     } catch (error) {
-        return { error: error.message };
+        return { error: `${error.message}\nTry again or contact admin` };
     }
 });
 

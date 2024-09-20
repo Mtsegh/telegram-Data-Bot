@@ -2,8 +2,8 @@ const callback_default = require("./default");
 const { getUserHistory, verifyTransaction } = require("../controllers/userController");
 const { sendDataFormsMenu, sendMainMenu } = require("./message");
 const User = require("../models/userModel");
-const { resetUserState, updateUserState, getUserStateFromDB } = require("../states");
-const { editMessage, sendPhoto } = require("./sender");
+const { resetUserState, updateUserState, getUserStateFromDB } = require("../controllers/stateController");
+const { editMessage, sendPhoto, sendMessage, deleteMessage } = require("./sender");
 const { dateformat, stringify, option, menu } = require("./botfunction");
 
 const handle_callback_data = async (bot, data, messageId, chatId) => {
@@ -19,9 +19,13 @@ const handle_callback_data = async (bot, data, messageId, chatId) => {
         }
     }
         
-    const user = await User.findOne({telegramId:chatId});
     const state = await getUserStateFromDB(chatId);
-    
+    const user = state?.reqUser || {};
+    if (!user?.name) {
+        data = 'signUser';
+    }
+
+
     try {
         switch (data) {
             case 'option1':
@@ -57,7 +61,7 @@ const handle_callback_data = async (bot, data, messageId, chatId) => {
                                 type: "contact",
                                 value: 'accountIssue',
                             }))],
-                            user.admin?[menu(chatId)]:[option('🔙 Back', 'mainMenu')]
+                            [option('🔙 Back', 'mainMenu')]
                         ],
                     }),
                 });
@@ -65,10 +69,19 @@ const handle_callback_data = async (bot, data, messageId, chatId) => {
 
             case 'mainMenu':
                 if (!user) {
-                    
+                    await sendMessage(bot, chatId, "User not found.", stringify([[option('Create account', 'signuser')],[option(`Account issue`, JSON.stringify({
+                        type: "contact",
+                        value: 'support',
+                    }))]]))
                 }
-                await resetUserState(chatId);
+                resetUserState(chatId);
+                await deleteMessage(bot, chatId, messageId);
+                if (user.admin) {
+                    await sendMessage(bot, chatId, "Admin, select option below", stringify([[menu(chatId)]]));
+                    return;
+                }
                 await sendMainMenu(bot, chatId, messageId);
+                
                 break;
 
             case 'airtimeOpt':
@@ -77,8 +90,9 @@ const handle_callback_data = async (bot, data, messageId, chatId) => {
                 break;
 
             case 'history':
-                const userId = user.admin ? state.bugAccountId : chatId;
+                const userId = user?.admin && state?.contact?.telegramId ? state?.contact?.telegramId : chatId;
                 getUserHistory(userId).then(async(history) => {
+                    await deleteMessage(bot, chatId, messageId)
                     const inlineKeyboard = history.map(tranx => [
                         {
                             text: `${dateformat(tranx.updatedAt)}\n${tranx.description}`,
@@ -97,12 +111,7 @@ const handle_callback_data = async (bot, data, messageId, chatId) => {
                             inline_keyboard: inlineKeyboard
                         })
                     };
-                    await updateUserState(chatId, {ref: true})
-                    await editMessage(bot, "Here are your recent transactions", {
-                        chat_id: chatId,
-                        message_id: messageId,
-                        reply_markup: options.reply_markup,
-                    });
+                    await sendMessage(bot, chatId, "Here are your recent transactions", options);
                 });
                 break;
 
@@ -113,7 +122,7 @@ const handle_callback_data = async (bot, data, messageId, chatId) => {
                     message_id: messageId,
                     reply_markup: JSON.stringify({
                         inline_keyboard: [
-                            [{ text: 'Cancel', callback_data: state.notuser?'signUser':'mainMenu' }],
+                            [{ text: 'Cancel', callback_data: !user.name?'signUser':'mainMenu' }],
                         ],
                     }),
                 });
@@ -193,7 +202,7 @@ const handle_callback_data = async (bot, data, messageId, chatId) => {
                     message_id: messageId,
                     reply_markup: JSON.stringify({
                         inline_keyboard: [
-                            [{ text: 'copy Account No.', callback_data: 'copy' }],
+                            [{ text: 'Copy Account No.', callback_data: 'copy' }],
                             [{ text: 'Send details for verification', callback_data: JSON.stringify({
                                 type: "contact",
                                 value: 'manualTrans',
@@ -217,8 +226,14 @@ const handle_callback_data = async (bot, data, messageId, chatId) => {
                 break;
             
             case 'signUser':
-                if (!user) {
-                    const options = stringify([ [option('Login with AUT', 'login')] ]);
+                if (!user?.name) {
+                    const options = {
+                        reply_markup: JSON.stringify({
+                            inline_keyboard: [
+                                [{ text: "Login with AUT", callback_data: "login" }]
+                            ]
+                        })
+                    };
                     editMessage(bot, 'To continue enter a passcode of at least 4 characters.', {
                         chat_id: chatId,
                         message_id: messageId,

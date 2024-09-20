@@ -18,7 +18,7 @@ function stringify(para) {
 
 function callback(name, user, action) {
     return { text: `${name}`, callback_data: JSON.stringify({
-        action: `${action}`,
+        action: action,
         type: 'admin',
         user: user,
     })}
@@ -31,6 +31,28 @@ function option(name, action) {
 function dateformat(date, time = 0) {
     return date.toISOString().split('T')[time];
 };
+
+function parseInput(input) {
+    const parts = input.split(':').map(str => str.trim());
+
+    if (parts.length !== 2 || !parts[0] || !parts[1]) {
+        throw new Error('Invalid input format. Please use "key: value" format.');
+    }
+
+    const [key, value] = parts;
+    const result = {};
+    result[key] = value;
+
+    return result;
+}
+
+// try {
+//     const parsed = parseInput("name: John Doe");
+//     console.log(parsed);  // Output: { name: 'John Doe' }
+// } catch (error) {
+//     console.error(error.message);
+// }
+
 
 const _message = `Hello👋🏾, Am M-bot specially designed to make your airtime and data purchase as easy and fast as possible.
         
@@ -124,6 +146,7 @@ function getValidity(innerText) {
 }
 
 
+
 module.exports = {
   _message,
   extractDataAmount,
@@ -137,7 +160,8 @@ module.exports = {
   mtn_plans,
   stringify,
   dateformat,
-  getValidity
+  getValidity,
+  parseInput
 }
 
 

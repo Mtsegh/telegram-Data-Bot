@@ -1,14 +1,16 @@
-const { findServicePlanText, mtn_plans } = require("./botfunction");
+const { findServicePlanText, mtn_plans, option, stringify } = require("./botfunction");
 const { getTransaction } = require("../controllers/userController");
-const { updateUserState, getUserStateFromDB } = require("../states");
+const { updateUserState, getUserStateFromDB } = require("../controllers/stateController");
 const User = require("../models/userModel");
 const forms = require("../api/Data_Plans");
 const { editMessage, sendMessage } = require("./sender");
 const { Admin } = require("./admin");
+const { receiptFormat } = require("./msgoptions");
+const errorHandler = require("../middleware/errorMiddleware");
 
 const callback_default = async (bot, data, parsedData, chatId, messageId) => {
     const state = await getUserStateFromDB(chatId);
-    const user = await User.findOne({ telegramId: chatId })
+    const user = state?.reqUser||{};
     if (parsedData) {
         if (parsedData.type === 'airtimeOpt') {
             editMessage(bot, "Enter Receiver's Phone Number", {
@@ -25,11 +27,17 @@ const callback_default = async (bot, data, parsedData, chatId, messageId) => {
             })
             
         } else if (parsedData.type === 'receipt') {
-            const userId = user.admin ? state.bugAccountId : chatId;
+            const userId = user.admin && state.contact.telegramId ?  state.contact.telegramId : chatId;
             try {
                 getTransaction(userId, parsedData.value).then(async(receipt) => {
-                    const options = { reply_markup: { inline_keyboard: [ [{ text: 'Download Receipt', callback_data: 'del' }], [{ text: 'Verify Transaction', callback_data: 'verify' }], [{ text: '🔙 Back', callback_data: 'history' }] ] } };
-                    await editMessage(bot, `Transaction Date: ${receipt.date}\n\nReference Id: ${receipt.referenceId}\n${receipt.type}: ${receipt.description}\nNetwork: ${receipt.provider}\nAmount: ${receipt.amount}\nStatus: ${receipt.status}Date: `, {
+                    const info = receiptFormat('', receipt);
+                    updateUserState(chatId, { ref: info.forReceipt })
+                    const options = stringify([
+                        [option('Download Receipt', 'download')],
+                        [option('Verify Transaction', 'verify')],
+                        [option('🔙 Back', 'history')]
+                    ]);
+                    await editMessage(bot, info.message, {
                         chat_id: chatId,
                         message_id: state.msgId,
                         reply_markup: options.reply_markup,
@@ -40,9 +48,19 @@ const callback_default = async (bot, data, parsedData, chatId, messageId) => {
                 await errorHandler(bot, chatId, state.msgId, `Network error. Try again.`, stringify([[option('Contact', json({ type: 'contact', value: 'buy' }))], [option('🔙 Back', 'option2')]]));
             }
             
-        } else if (parsedData.type === 'admin') {
-            await Admin(bot, chatId, parsedData.user, parsedData.action);
-            
+        } else if (parsedData.type === 'admin' && user?.admin) {
+            if (!user?.accountstatus) {
+                await errorHandler(bot, chatId, state.msgId, `Your account has been suspended contact Admin.`, { contact: 'support', back: 'contactUs' }, false);
+                //return;
+            }
+            let contact
+            if (state?.contact?.telegramId!==parsedData.user) {
+                contact = await User.findOne({ telegramId: parsedData.user });
+            } else {
+                contact = state.contact
+            }
+            await Admin(bot, chatId, contact, parsedData.action);
+            return
         } else if (parsedData.type === 'contact') {
             switch (parsedData.value) {
                 case 'buy':
@@ -200,6 +218,31 @@ const callback_default = async (bot, data, parsedData, chatId, messageId) => {
             console.error('Error processing data:', error);
             // Handle error if needed, like sending an error message to the user
         }
+    } else if (/^bug_+\d/.test(data)||/^receipt_+\d/.test(data)) {
+            if (/^bug_+\d/.test(data)) {
+                await Contactadmin.update(data.split('_')[1])
+            } else {
+                try {
+                    sendMessage(bot, chatId, 'Loading details...').then(async(msg) => {
+                        const receipt = await verify(data.split('_')[1]);
+                        const detail = JSON.stringify(receipt, null, '\n')
+                        
+                            if (detail.error) {
+                                await errorHandler(bot, chatId, msg, detail.error, { admin: chatId, back: 'API' }, true);
+                            } else {              
+                                await editMessage(bot, `Details: ${detail}`, {
+                                    chat_id: chatId,
+                                    message_id: msg,
+                                    reply_markup: options.reply_markup
+                                });
+                            }
+                    })
+                } catch (error) {
+                    console.error(error);
+                    await errorHandler(bot, chatId, state.msgId, `Please /refresh and try again`, {}, false);
+                }
+            }
+
     } else {
         // Handle invalid data selection
         console.log('Invalid data:', data);

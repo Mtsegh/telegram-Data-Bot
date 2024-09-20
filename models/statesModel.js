@@ -42,6 +42,10 @@ const stateSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
+    isAdmin: {
+        type: Boolean,
+        default: false
+    },
     aut: {
         type: String,
         default: null
@@ -66,17 +70,13 @@ const stateSchema = mongoose.Schema({
         type: String,
         default: null
     },
-    bugAccountId: {
-        type: String,
-        default: null
-    },
     bug: {
         type: Boolean,
         default: false
     },
-    notuser: {
-        type: Boolean,
-        default: false
+    reqUser: {
+        type: Object,
+        default: {}
     },
     a: {
         type: Boolean,
@@ -102,7 +102,14 @@ const stateSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
-
+    text: {
+        type: Boolean,
+        default: false
+    },
+    contact: {
+        type: Object,
+        required: true
+    },
 }, {
     timestamps: true
 });

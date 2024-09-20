@@ -1,8 +1,6 @@
 
 const puppeteer = require('puppeteer');
 const path = require('path');
-const forms = require('./api/Data_Plans');
-const user = '123456789'
 async function captureDivScreenshot(TId, info) {
     // Define your HTML content with styles
     const htmlContent = `
@@ -118,21 +116,33 @@ async function captureDivScreenshot(TId, info) {
 class Contactadmin {
   
   static async dateformat(date) {
-    return date.split(' ')[3]+' '+date.split(' ')[2,0];
+    return date.split(' ')+' '+date.split(' ')[2,0];
   };
 }
 async function name() {
+  const  v = /^bug_+\d/.test('bug_100')
+  console.log(v);
   
-  let date = '500MB at ₦122.5 for 30 days'//forms['9mobile'].Data_Plan[1].InnerText;
-  const a = await Contactadmin.dateformat(date)
+}
+c = {
+  id: 28840352,
+  network: 1,
+  ident: 'Data6a0c32e7b-dcc',
+  balance_before: '368.26',
+  balance_after: '361.52',
+  mobile_number: '07070887096',
+  plan: 377,
+  Status: 'successful',
+  client_ip: '105.116.1.19',
+  api_response: 'Dear Customer, You have successfully shared 20MB Data to 2347070887096. Your new  data balance is 44653.85GB expires 20/10/2024. Thank you.',
+  plan_network: 'MTN',
+  plan_name: '20.0MB',
+  plan_amount: '6.74',
+  create_date: '2024-09-14T00:50:27.820025',
+  Ported_number: true,
+  payment_medium: 'MAIN WALLET',
+  sponsor_balance: '20455.03'
+} 
 
-  console.log(a)
-}
-let date = '500MB at ₦122.5 for 30 day';
-function getValidity(innerText) {
-  const regex = /(\d+day[s]{0,1}|\d+[' ']+day[s]{0,1})/;
-  const match = innerText.match(regex);
-  return match ? match[0] : null;
-}
-console.log(mount(date))
+//console.log(mount(date))
 name()
